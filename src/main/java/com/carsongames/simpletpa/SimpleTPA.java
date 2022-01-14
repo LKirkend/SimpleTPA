@@ -15,7 +15,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  *  Implements the TPA and TPAACCEPT commands
  */
 public final class SimpleTPA extends JavaPlugin {
-    static int cooldown = 30; // Determines the cooldown of the tpa request
+    static int cooldown = 60; // Determines the cooldown of the tpa request
     Player player ;
     public static Plugin plugin;
     @Override public void onEnable() {
@@ -49,12 +49,13 @@ public final class SimpleTPA extends JavaPlugin {
                     playerinit.teleport(player.getLocation());
                 }
                 else{
-                    sender.sendMessage(net.md_5.bungee.api.ChatColor.BLUE +"No requests!");
+                    sender.sendMessage(net.md_5.bungee.api.ChatColor.DARK_RED + "No requests!");
                 }
             }
             catch (NullPointerException e){
-                sender.sendMessage(net.md_5.bungee.api.ChatColor.BLUE +"Player not online!");
-                e.printStackTrace();
+                sender.sendMessage(net.md_5.bungee.api.ChatColor.DARK_RED + "Player not online!");
+                e.printStackTrace(); // Debug
+                return false;
             }
             return false;
         }
@@ -66,32 +67,29 @@ public final class SimpleTPA extends JavaPlugin {
             if (args.length == 1) {
                 Player playerinit = (Player) sender;
                 String playername = args[0];
-                try {
-                    /*.getPlayer(playername) returns a name that starts with
-                    playername, so "s" would return "Saws", making the catch
-                    not work correctly. Fixed */
-                    player = Bukkit.getServer().getPlayerExact(playername);
-                    if (!Cooldown_Data.checkCooldown(player)) {
-                        sender.sendMessage(ChatColor.BLUE + "You have already sent this player a request.");
-                        return true;
-                    }
+                player = Bukkit.getServer().getPlayer(playername);
+                if(player == null){
+                    sender.sendMessage(ChatColor.DARK_RED + playername + " is offline.");
+                    return true;
                 }
-                catch (NullPointerException e){
-                    sender.sendMessage(ChatColor.BLUE + playername + " is offline.");
+                if (!Cooldown_Data.checkCooldown(player)) {
+                    sender.sendMessage(ChatColor.BLUE + "You have already sent this player a request.");
+                    return true;
+                }
+                // Case: Name of initiator is the teleportee
+                if(player.getName().equals(playerinit.getName())){
+                    sender.sendMessage(ChatColor.DARK_RED + "You can't tpa to yourself!");
                     return true;
                 }
 
-                if(playername.equals(playerinit.getName())){
-                    sender.sendMessage(ChatColor.BLUE + "Can't tpa to yourself!");
-                    return true;
-                }
                 Cooldown_Data.setCooldown(player, cooldown);
-                Map.playermap.put(playername, playerinit.getName());
-                player.sendMessage(ChatColor.BLUE + playerinit.getName() + " would like to teleport to your location! Type /tpaaccept to allow. You have " + cooldown + " seconds to respond.");
-                sender.sendMessage(ChatColor.BLUE + "Request Sent!");
+                Map.playermap.put(player.getName(), playerinit.getName());
+                player.sendMessage(ChatColor.BLUE + playerinit.getName() + " would like to teleport to you! Type /tpaaccept to allow. You have " + cooldown + " seconds to respond.");
+                sender.sendMessage(ChatColor.GREEN + "Request Sent!");
                 return true;
             } 
             else {
+                // Invalid input
                 return false;
             }
         }
